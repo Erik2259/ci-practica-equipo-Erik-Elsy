@@ -2,7 +2,7 @@ name: CI Pipeline
 on:
   push:
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,15 +15,3 @@ jobs:
       - name: Ejecutar pruebas
         run: |
           pytest
-      - name: Build proyecto
-        run: |
-          mkdir artefactos
-          cp calculadora.py artefactos/
-      - name: Generar ZIP
-        run: |
-          zip -r artefacto.zip artefactos
-      - name: Subir artefacto
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-python
-          path: artefacto.zip
