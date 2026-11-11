@@ -1,30 +1,49 @@
 name: CI Pipeline
+
+# Flujo: Push -> Build -> Análisis estático -> Pruebas -> Reporte -> Aprobación
 on:
   push:
+  pull_request:
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: pip
 
-      - name: Instalar dependencias
+      - name: Build (instalar dependencias)
         run: |
-          pip install pytest
-          pip install pytest-cov
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Ejecutar pruebas
+      - name: Análisis estático (flake8)
+        run: flake8 .
+
+      - name: Pruebas y cobertura
         run: |
-          pytest
+          pytest --cov=calculadora --cov=estadisticas \
+            --cov-report=term-missing --cov-report=xml --cov-report=html \
+            --cov-fail-under=90
 
-      - name: Ejecutar cobertura
+      - name: Resumen de métricas
+        if: always()
         run: |
-          pytest --cov=. --cov-report=xml
+          echo "## Reporte de ejecución CI" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`${GITHUB_SHA::7}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Rama: \`${GITHUB_REF_NAME}\`" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Guardar reporte
+      - name: Guardar reporte de cobertura
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: coverage.xml
+          path: |
+            coverage.xml
+            htmlcov/
